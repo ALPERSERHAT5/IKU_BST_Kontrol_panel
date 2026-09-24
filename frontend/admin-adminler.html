@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Adminler — BST Kontrol Paneli</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script type="module" src="js/theme.js"></script>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-brand"><div class="logo">BST</div><span>Kontrol Paneli</span></div>
+    <div class="navbar-links">
+      <a href="admin.html"><span class="label">Dashboard</span></a>
+      <a href="admin-talepler.html"><span class="label">Talepler</span></a>
+      <a href="admin-siniflar.html"><span class="label">Sınıflar</span></a>
+      <a href="admin-kullanicilar.html"><span class="label">Kullanıcılar</span></a>
+      <a href="admin-adminler.html" class="active"><span class="label">Adminler</span></a>
+      <a href="admin-arsiv.html"><span class="label">Arşiv</span></a>
+      <a href="#" id="themeBtn"><span class="label">Tema</span></a>
+      <a href="#" id="logoutBtn"><span class="label">Çıkış</span></a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="page-header row-between">
+      <div>
+        <h1>Adminler</h1>
+        <p>BST/IT ekibi üyeleri.</p>
+      </div>
+      <button class="btn btn-primary" id="addAdminBtn">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14M5 12h14"/></svg>
+        Yeni Admin Ekle
+      </button>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Ad Soyad</th>
+            <th>E-posta</th>
+            <th>Rol</th>
+            <th>Son Giriş</th>
+            <th class="text-right">İşlem</th>
+          </tr>
+        </thead>
+        <tbody id="adminTable"><tr><td colspan="5"><p class="muted">Yükleniyor...</p></td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script type="module">
+    import { apiFetch, getUser, clearTokens } from './js/api.js';
+    import { icons, formatDate, esc, toast, openModal } from './js/ui.js';
+
+    const user = getUser();
+    if (!user || user.role !== 'superadmin') {
+      window.location.href = user ? 'admin.html' : 'login.html';
+    }
+
+    document.getElementById('themeBtn').addEventListener('click', (e) => { e.preventDefault(); window.toggleTheme(); });
+    document.getElementById('logoutBtn').addEventListener('click', (e) => { e.preventDefault(); clearTokens(); window.location.href = 'login.html'; });
+
+    const roleLabels = { admin: 'IT Admin', superadmin: 'Ana Admin' };
+
+    async function load() {
+      try {
+        const { admins } = await apiFetch('/admin/admins');
+        const tbody = document.getElementById('adminTable');
+        tbody.innerHTML = admins.map(a => `
+          <tr>
+            <td><strong>${esc(a.name)} ${esc(a.surname)}</strong>${a.id === user.id ? ' <span class="muted">(siz)</span>' : ''}</td>
+            <td>${esc(a.email)}</td>
+            <td>${roleLabels[a.role] || a.role}</td>
+            <td>${a.lastLogin ? formatDate(a.lastLogin) : '-'}</td>
+            <td class="text-right">
+              ${a.id !== user.id ? `<button class="btn btn-sm" data-del="${a.id}">Sil</button>` : ''}
+            </td>
+          </tr>
+        `).join('');
+        tbody.querySelectorAll('[data-del]').forEach(btn => {
+          btn.addEventListener('click', () => removeAdmin(btn.dataset.del));
+        });
+      } catch (e) { toast(e.message, 'error'); }
+    }
+
+    async function removeAdmin(id) {
+      if (!confirm('Bu admini silmek istediğinize emin misiniz?')) return;
+      try {
+        await apiFetch(`/admin/admins/${id}`, { method: 'DELETE' });
+        toast('Admin silindi.', 'success');
+        load();
+      } catch (e) { toast(e.message, 'error'); }
+    }
+
+    document.getElementById('addAdminBtn').addEventListener('click', () => {
+      const form = document.createElement('form');
+      form.innerHTML = `
+        <div class="row" style="gap:12px;">
+          <div class="form-group" style="flex:1;">
+            <label>Ad <span class="req">*</span></label>
+            <input id="an" required />
+          </div>
+          <div class="form-group" style="flex:1;">
+            <label>Soyad <span class="req">*</span></label>
+            <input id="as" required />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>E-posta <span class="req">*</span></label>
+          <input id="ae" type="email" placeholder="ad.soyad@iku.edu.tr" required />
+        </div>
+        <div class="form-group">
+          <label>Şifre <span class="req">*</span></label>
+          <input id="ap" type="text" minlength="6" required />
+        </div>
+        <div class="form-group">
+          <label>Rol <span class="req">*</span></label>
+          <select id="ar">
+            <option value="admin">IT Admin</option>
+            <option value="superadmin">Ana Admin</option>
+          </select>
+        </div>
+        <div class="modal-foot" style="padding:0; border:none;">
+          <button type="button" class="btn" data-close>Vazgeç</button>
+          <button type="submit" class="btn btn-primary">Oluştur</button>
+        </div>
+      `;
+      const modal = openModal({ title: 'Yeni Admin Ekle', body: form });
+      form.querySelector('[data-close]').addEventListener('click', modal.close);
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+          await apiFetch('/admin/admins', {
+            method: 'POST',
+            body: JSON.stringify({
+              name: form.querySelector('#an').value.trim(),
+              surname: form.querySelector('#as').value.trim(),
+              email: form.querySelector('#ae').value.trim(),
+              password: form.querySelector('#ap').value,
+              role: form.querySelector('#ar').value,
+            }),
+          });
+          toast('Admin oluşturuldu.', 'success');
+          modal.close();
+          load();
+        } catch (err) { toast(err.message, 'error'); }
+      });
+    });
+
+    load();
+  </script>
+</body>
+</html>

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kullanıcılar — BST Kontrol Paneli</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script type="module" src="js/theme.js"></script>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-brand"><div class="logo">BST</div><span>Kontrol Paneli</span></div>
+    <div class="navbar-links">
+      <a href="admin.html"><span class="label">Dashboard</span></a>
+      <a href="admin-talepler.html"><span class="label">Talepler</span></a>
+      <a href="admin-siniflar.html"><span class="label">Sınıflar</span></a>
+      <a href="admin-kullanicilar.html" class="active"><span class="label">Kullanıcılar</span></a>
+      <a href="admin-adminler.html"><span class="label">Adminler</span></a>
+      <a href="admin-arsiv.html"><span class="label">Arşiv</span></a>
+      <a href="#" id="themeBtn"><span class="label">Tema</span></a>
+      <a href="#" id="logoutBtn"><span class="label">Çıkış</span></a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="page-header">
+      <h1>Kullanıcılar</h1>
+      <p>Sisteme kayıtlı öğretim görevlileri ve personel.</p>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Ad Soyad</th>
+            <th>E-posta</th>
+            <th>Kayıt</th>
+            <th>Son Giriş</th>
+            <th class="text-right">İşlem</th>
+          </tr>
+        </thead>
+        <tbody id="userTable"><tr><td colspan="5"><p class="muted">Yükleniyor...</p></td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script type="module">
+    import { apiFetch, getUser, clearTokens } from './js/api.js';
+    import { icons, formatDate, esc, toast, openModal } from './js/ui.js';
+
+    const user = getUser();
+    if (!user || user.role !== 'superadmin') {
+      window.location.href = user ? 'admin.html' : 'login.html';
+    }
+
+    document.getElementById('themeBtn').addEventListener('click', (e) => { e.preventDefault(); window.toggleTheme(); });
+    document.getElementById('logoutBtn').addEventListener('click', (e) => { e.preventDefault(); clearTokens(); window.location.href = 'login.html'; });
+
+    async function load() {
+      try {
+        const { users } = await apiFetch('/admin/users');
+        const tbody = document.getElementById('userTable');
+        if (!users.length) {
+          tbody.innerHTML = `<tr><td colspan="5"><div class="empty">${icons.empty}<p>Kayıtlı kullanıcı yok.</p></div></td></tr>`;
+          return;
+        }
+        tbody.innerHTML = users.map(u => `
+          <tr>
+            <td><strong>${esc(u.name)} ${esc(u.surname)}</strong></td>
+            <td>${esc(u.email)}</td>
+            <td>${formatDate(u.createdAt)}</td>
+            <td>${u.lastLogin ? formatDate(u.lastLogin) : '-'}</td>
+            <td class="text-right">
+              <button class="btn btn-sm" data-reset="${u.id}" data-name="${esc(u.name)} ${esc(u.surname)}">Şifre Sıfırla</button>
+            </td>
+          </tr>
+        `).join('');
+        tbody.querySelectorAll('[data-reset]').forEach(btn => {
+          btn.addEventListener('click', () => resetPassword(btn.dataset.reset, btn.dataset.name));
+        });
+      } catch (e) { toast(e.message, 'error'); }
+    }
+
+    function resetPassword(id, name) {
+      const form = document.createElement('form');
+      form.innerHTML = `
+        <p class="muted" style="margin-top:0;"><strong>${esc(name)}</strong> için yeni şifre belirleyin.</p>
+        <div class="form-group">
+          <label>Yeni Şifre <span class="req">*</span></label>
+          <input id="np" type="text" minlength="6" required />
+          <div class="form-hint">En az 6 karakter. Kullanıcıya iletin.</div>
+        </div>
+        <div class="modal-foot" style="padding:0; border:none;">
+          <button type="button" class="btn" data-close>Vazgeç</button>
+          <button type="submit" class="btn btn-primary">Sıfırla</button>
+        </div>
+      `;
+      const modal = openModal({ title: 'Şifre Sıfırla', body: form });
+      form.querySelector('[data-close]').addEventListener('click', modal.close);
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+          await apiFetch(`/admin/users/${id}/reset-password`, {
+            method: 'POST',
+            body: JSON.stringify({ newPassword: form.querySelector('#np').value }),
+          });
+          toast('Şifre sıfırlandı.', 'success');
+          modal.close();
+        } catch (err) { toast(err.message, 'error'); }
+      });
+    }
+
+    load();
+  </script>
+</body>
+</html>

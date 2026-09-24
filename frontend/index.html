@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <title>BST Kontrol Paneli</title>
+  <script>
+    // Oturum varsa dashboard'a, yoksa login'e
+    const token = localStorage.getItem('accessToken');
+    const user = localStorage.getItem('user');
+    if (token && user) {
+      try {
+        const u = JSON.parse(user);
+        window.location.href = u.role === 'user' ? 'dashboard.html' : 'admin.html';
+      } catch {
+        window.location.href = 'login.html';
+      }
+    } else {
+      window.location.href = 'login.html';
+    }
+  </script>
+</head>
+<body></body>
+</html>

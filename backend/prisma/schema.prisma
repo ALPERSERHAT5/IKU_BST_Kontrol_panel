@@ -1,0 +1,68 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  surname      String
+  email        String   @unique
+  passwordHash String
+  role         String   @default("user") // user | admin | superadmin
+  createdAt    DateTime @default(now())
+  lastLogin    DateTime?
+
+  tickets  Ticket[] @relation("UserTickets")
+  assigned Ticket[] @relation("AssignedAdmin")
+}
+
+model Room {
+  id         String   @id @default(cuid())
+  roomCode   String   @unique
+  floor      Int
+  corridor   String
+  roomNumber String
+  qrToken    String   @unique
+  createdAt  DateTime @default(now())
+
+  tickets Ticket[]
+}
+
+model ProblemType {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  tickets Ticket[]
+}
+
+model Ticket {
+  id              String    @id @default(cuid())
+  ticketNumber    String    @unique
+  userId          String
+  user            User      @relation("UserTickets", fields: [userId], references: [id])
+  roomId          String?
+  room            Room?     @relation(fields: [roomId], references: [id])
+  problemTypeId   String?
+  problemType     ProblemType? @relation(fields: [problemTypeId], references: [id])
+  customProblem   String?
+  description     String?
+  status          String    @default("pending") // pending | in_progress | completed | cancelled
+  assignedAdminId String?
+  assignedAdmin   User?     @relation("AssignedAdmin", fields: [assignedAdminId], references: [id])
+  solution        String?
+  createdAt       DateTime  @default(now())
+  assignedAt      DateTime?
+  completedAt     DateTime?
+  archiveDeleteAt DateTime?
+
+  @@index([status])
+  @@index([userId])
+  @@index([archiveDeleteAt])
+}

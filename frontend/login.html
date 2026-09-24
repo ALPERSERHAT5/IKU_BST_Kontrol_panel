@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Giriş Yap — BST Kontrol Paneli</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script type="module" src="js/theme.js"></script>
+</head>
+<body>
+  <div class="auth-wrap">
+    <div class="card auth-card">
+      <div class="brand-title">
+        <h1>BST <span>Kontrol Paneli</span></h1>
+        <p>İstanbul Kültür Üniversitesi — Teknik Destek Sistemi</p>
+      </div>
+
+      <div class="tabs">
+        <a href="login.html" class="active">Giriş Yap</a>
+        <a href="register.html">Kayıt Ol</a>
+      </div>
+
+      <div id="error" class="alert alert-error" style="display:none;"></div>
+
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="email">Kurumsal E-posta</label>
+          <input type="email" id="email" placeholder="ad.soyad@iku.edu.tr" required />
+        </div>
+        <div class="form-group">
+          <label for="password">Şifre</label>
+          <input type="password" id="password" required />
+        </div>
+        <button class="btn btn-primary btn-block" type="submit">Giriş Yap</button>
+      </form>
+
+      <p class="muted" style="text-align:center;margin-top:16px;">
+        <a href="#" id="forgot">Şifremi Unuttum</a>
+      </p>
+    </div>
+  </div>
+
+  <script type="module">
+    import { apiFetch, setTokens, setUser } from './js/api.js';
+
+    const form = document.getElementById('loginForm');
+    const errBox = document.getElementById('error');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errBox.style.display = 'none';
+      try {
+        const data = await apiFetch('/auth/login', {
+          method: 'POST',
+          body: JSON.stringify({
+            email: document.getElementById('email').value.trim(),
+            password: document.getElementById('password').value,
+          }),
+        });
+        setTokens(data);
+        setUser(data.user);
+        window.location.href = data.user.role === 'user' ? 'dashboard.html' : 'admin.html';
+      } catch (err) {
+        errBox.textContent = err.message;
+        errBox.style.display = 'block';
+      }
+    });
+
+    document.getElementById('forgot').addEventListener('click', (e) => {
+      e.preventDefault();
+      alert('Şifre yenileme işlemi için BST/IT ekibinizle iletişime geçin.');
+    });
+  </script>
+</body>
+</html>

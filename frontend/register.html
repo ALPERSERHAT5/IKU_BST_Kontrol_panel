@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kayıt Ol — BST Kontrol Paneli</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script type="module" src="js/theme.js"></script>
+</head>
+<body>
+  <div class="auth-wrap">
+    <div class="card auth-card">
+      <div class="brand-title">
+        <h1>BST <span>Kontrol Paneli</span></h1>
+        <p>Kurumsal hesap oluştur</p>
+      </div>
+
+      <div class="tabs">
+        <a href="login.html">Giriş Yap</a>
+        <a href="register.html" class="active">Kayıt Ol</a>
+      </div>
+
+      <div id="error" class="alert alert-error" style="display:none;"></div>
+
+      <form id="registerForm">
+        <div class="form-group">
+          <label for="name">Ad</label>
+          <input type="text" id="name" required />
+        </div>
+        <div class="form-group">
+          <label for="surname">Soyad</label>
+          <input type="text" id="surname" required />
+        </div>
+        <div class="form-group">
+          <label for="email">Kurumsal E-posta</label>
+          <input type="email" id="email" placeholder="ad.soyad@iku.edu.tr" required />
+        </div>
+        <div class="form-group">
+          <label for="password">Şifre</label>
+          <input type="password" id="password" minlength="6" required />
+        </div>
+        <div class="form-group">
+          <label for="password2">Şifre Tekrar</label>
+          <input type="password" id="password2" minlength="6" required />
+        </div>
+        <button class="btn btn-primary btn-block" type="submit">Kayıt Ol</button>
+      </form>
+    </div>
+  </div>
+
+  <script type="module">
+    import { apiFetch } from './js/api.js';
+
+    const form = document.getElementById('registerForm');
+    const errBox = document.getElementById('error');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errBox.style.display = 'none';
+
+      const p1 = document.getElementById('password').value;
+      const p2 = document.getElementById('password2').value;
+      if (p1 !== p2) {
+        errBox.textContent = 'Şifreler birbiriyle uyuşmuyor.';
+        errBox.style.display = 'block';
+        return;
+      }
+
+      try {
+        await apiFetch('/auth/register', {
+          method: 'POST',
+          body: JSON.stringify({
+            name: document.getElementById('name').value.trim(),
+            surname: document.getElementById('surname').value.trim(),
+            email: document.getElementById('email').value.trim(),
+            password: p1,
+          }),
+        });
+        alert('Kayıt başarılı. Giriş yapabilirsiniz.');
+        window.location.href = 'login.html';
+      } catch (err) {
+        errBox.textContent = err.message;
+        errBox.style.display = 'block';
+      }
+    });
+  </script>
+</body>
+</html>

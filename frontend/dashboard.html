@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ana Sayfa — BST Kontrol Paneli</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script type="module" src="js/theme.js"></script>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <div class="logo">BST</div>
+      <span>Kontrol Paneli</span>
+    </div>
+    <div class="navbar-links">
+      <a href="dashboard.html" class="active"><span class="label">Ana Sayfa</span></a>
+      <a href="taleplerim.html"><span class="label">Taleplerim</span></a>
+      <a href="#" id="themeBtn"><span class="label">Tema</span></a>
+      <a href="#" id="logoutBtn"><span class="label">Çıkış</span></a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="page-header">
+      <h1 id="greeting">Merhaba.</h1>
+      <p>Teknik destek taleplerinizi buradan oluşturabilirsiniz.</p>
+    </div>
+
+    <a href="yeni-talep.html" class="btn btn-primary" style="margin-bottom:22px;">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14M5 12h14"/></svg>
+      Yeni Destek Talebi
+    </a>
+
+    <h2>Aktif Taleplerim</h2>
+    <div id="activeTickets"><p class="muted">Yükleniyor...</p></div>
+
+    <h2 style="margin-top:24px;">Son Taleplerim</h2>
+    <div id="recentTickets"><p class="muted">Yükleniyor...</p></div>
+  </div>
+
+  <script type="module">
+    import { apiFetch, getUser, clearTokens } from './js/api.js';
+    import { icons, statusLabels, formatDate, esc, toast } from './js/ui.js';
+
+    const user = getUser();
+    if (!user) {
+      window.location.href = 'login.html';
+    } else if (user.role !== 'user') {
+      window.location.href = 'admin.html';
+    } else {
+      document.getElementById('greeting').textContent = `Merhaba, ${user.name}.`;
+    }
+
+    document.getElementById('themeBtn').addEventListener('click', (e) => {
+      e.preventDefault();
+      window.toggleTheme();
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', (e) => {
+      e.preventDefault();
+      clearTokens();
+      window.location.href = 'login.html';
+    });
+
+    function renderTicket(t) {
+      return `
+        <div class="ticket ${t.status}">
+          <div class="ticket-head">
+            <div>
+              <div class="ticket-id">${esc(t.ticketNumber)}</div>
+              <div class="ticket-title">${esc(t.problemType?.name || t.customProblem || 'Sorun')}</div>
+            </div>
+            <span class="badge badge-${t.status}">${statusLabels[t.status]}</span>
+          </div>
+          <div class="ticket-meta">
+            <span>${icons.building} ${esc(t.room?.roomCode || '-')}</span>
+            <span>${formatDate(t.createdAt)}</span>
+            ${t.assignedAdmin ? `<span>İşleme alan: ${esc(t.assignedAdmin.name)} ${esc(t.assignedAdmin.surname)}</span>` : ''}
+          </div>
+          ${t.description ? `<div class="ticket-desc">${esc(t.description)}</div>` : ''}
+        </div>
+      `;
+    }
+
+    async function load() {
+      try {
+        const { tickets } = await apiFetch('/tickets/my');
+        const active = tickets.filter(t => t.status === 'pending' || t.status === 'in_progress');
+        const recent = tickets.slice(0, 5);
+
+        document.getElementById('activeTickets').innerHTML = active.length
+          ? active.map(renderTicket).join('')
+          : `<div class="empty">${icons.empty}<p>Aktif talebiniz yok.</p></div>`;
+
+        document.getElementById('recentTickets').innerHTML = recent.length
+          ? recent.map(renderTicket).join('')
+          : `<div class="empty">${icons.empty}<p>Henüz talep oluşturmadınız.</p></div>`;
+      } catch (e) {
+        toast(e.message, 'error');
+      }
+    }
+
+    load();
+  </script>
+</body>
+</html>

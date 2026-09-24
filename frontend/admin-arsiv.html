@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Arşiv — BST Kontrol Paneli</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script type="module" src="js/theme.js"></script>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-brand"><div class="logo">BST</div><span>Kontrol Paneli</span></div>
+    <div class="navbar-links">
+      <a href="admin.html"><span class="label">Dashboard</span></a>
+      <a href="admin-talepler.html"><span class="label">Talepler</span></a>
+      <a href="admin-siniflar.html"><span class="label">Sınıflar</span></a>
+      <a href="admin-kullanicilar.html" class="superadmin-only hidden"><span class="label">Kullanıcılar</span></a>
+      <a href="admin-adminler.html" class="superadmin-only hidden"><span class="label">Adminler</span></a>
+      <a href="admin-arsiv.html" class="active"><span class="label">Arşiv</span></a>
+      <a href="#" id="themeBtn"><span class="label">Tema</span></a>
+      <a href="#" id="logoutBtn"><span class="label">Çıkış</span></a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="page-header">
+      <h1>Arşiv</h1>
+      <p>Tamamlanan talepler 10 gün boyunca burada tutulur, sonra otomatik silinir.</p>
+    </div>
+
+    <div class="search-bar">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input type="text" id="searchInput" placeholder="Talep ID, sınıf veya sorun ara..." />
+    </div>
+
+    <div id="list"><p class="muted">Yükleniyor...</p></div>
+  </div>
+
+  <script type="module">
+    import { apiFetch, getUser, clearTokens } from './js/api.js';
+    import { icons, statusLabels, formatDate, esc, toast } from './js/ui.js';
+
+    const user = getUser();
+    if (!user) window.location.href = 'login.html';
+    else if (user.role !== 'admin' && user.role !== 'superadmin') {
+      window.location.href = 'dashboard.html';
+    } else if (user.role === 'superadmin') {
+      document.querySelectorAll('.superadmin-only').forEach(el => el.classList.remove('hidden'));
+    }
+
+    document.getElementById('themeBtn').addEventListener('click', (e) => { e.preventDefault(); window.toggleTheme(); });
+    document.getElementById('logoutBtn').addEventListener('click', (e) => { e.preventDefault(); clearTokens(); window.location.href = 'login.html'; });
+
+    function daysLeft(date) {
+      if (!date) return 0;
+      const diff = new Date(date).getTime() - Date.now();
+      return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+    }
+
+    let searchQuery = '';
+
+    function renderTicket(t) {
+      const left = daysLeft(t.archiveDeleteAt);
+      return `
+        <div class="ticket completed">
+          <div class="ticket-head">
+            <div>
+              <div class="ticket-id">${esc(t.ticketNumber)}</div>
+              <div class="ticket-title">${esc(t.problemType?.name || t.customProblem || 'Sorun')}</div>
+            </div>
+            <span class="badge badge-completed">${statusLabels.completed}</span>
+          </div>
+          <div class="ticket-meta">
+            <span>${icons.building} ${esc(t.room?.roomCode || '-')}</span>
+            <span>Talep: ${formatDate(t.createdAt)}</span>
+            <span>Tamamlanma: ${formatDate(t.completedAt)}</span>
+            <span>Çözen: ${esc(t.assignedAdmin?.name || '')} ${esc(t.assignedAdmin?.surname || '')}</span>
+          </div>
+          ${t.description ? `<div class="ticket-desc">${esc(t.description)}</div>` : ''}
+          ${t.solution ? `<div class="ticket-desc" style="border-left-color:var(--red);"><strong>Çözüm:</strong> ${esc(t.solution)}</div>` : ''}
+          <div class="ticket-assigned" style="margin-top:8px;">
+            ${left > 0 ? `Arşivde kalan süre: ${left} gün` : 'Silinmek üzere'}
+          </div>
+        </div>
+      `;
+    }
+
+    async function load() {
+      try {
+        const { tickets } = await apiFetch('/tickets/archived');
+        let filtered = tickets;
+        if (searchQuery) {
+          const q = searchQuery.toLowerCase();
+          filtered = tickets.filter(t =>
+            t.ticketNumber.toLowerCase().includes(q) ||
+            (t.room?.roomCode || '').toLowerCase().includes(q) ||
+            (t.problemType?.name || t.customProblem || '').toLowerCase().includes(q)
+          );
+        }
+        const list = document.getElementById('list');
+        list.innerHTML = filtered.length
+          ? filtered.map(renderTicket).join('')
+          : `<div class="empty">${icons.empty}<p>Arşivde kayıt yok.</p></div>`;
+      } catch (e) { toast(e.message, 'error'); }
+    }
+
+    let timer;
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => { searchQuery = e.target.value.trim(); load(); }, 300);
+    });
+
+    load();
+  </script>
+</body>
+</html>

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Taleplerim — BST Kontrol Paneli</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script type="module" src="js/theme.js"></script>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <div class="logo">BST</div>
+      <span>Kontrol Paneli</span>
+    </div>
+    <div class="navbar-links">
+      <a href="dashboard.html"><span class="label">Ana Sayfa</span></a>
+      <a href="taleplerim.html" class="active"><span class="label">Taleplerim</span></a>
+      <a href="#" id="themeBtn"><span class="label">Tema</span></a>
+      <a href="#" id="logoutBtn"><span class="label">Çıkış</span></a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="page-header row-between">
+      <div>
+        <h1>Taleplerim</h1>
+        <p>Oluşturduğunuz tüm destek talepleri.</p>
+      </div>
+      <a href="yeni-talep.html" class="btn btn-primary">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14M5 12h14"/></svg>
+        Yeni Talep
+      </a>
+    </div>
+
+    <div id="list"><p class="muted">Yükleniyor...</p></div>
+  </div>
+
+  <script type="module">
+    import { apiFetch, getUser, clearTokens } from './js/api.js';
+    import { icons, statusLabels, formatDate, esc, toast } from './js/ui.js';
+
+    const user = getUser();
+    if (!user) window.location.href = 'login.html';
+    else if (user.role !== 'user') window.location.href = 'admin.html';
+
+    document.getElementById('themeBtn').addEventListener('click', (e) => {
+      e.preventDefault(); window.toggleTheme();
+    });
+    document.getElementById('logoutBtn').addEventListener('click', (e) => {
+      e.preventDefault(); clearTokens(); window.location.href = 'login.html';
+    });
+
+    function renderTicket(t) {
+      return `
+        <div class="ticket ${t.status}">
+          <div class="ticket-head">
+            <div>
+              <div class="ticket-id">${esc(t.ticketNumber)}</div>
+              <div class="ticket-title">${esc(t.problemType?.name || t.customProblem || 'Sorun')}</div>
+            </div>
+            <span class="badge badge-${t.status}">${statusLabels[t.status]}</span>
+          </div>
+          <div class="ticket-meta">
+            <span>${icons.building} ${esc(t.room?.roomCode || '-')}</span>
+            <span>${formatDate(t.createdAt)}</span>
+            ${t.assignedAdmin ? `<span>İşleme alan: ${esc(t.assignedAdmin.name)} ${esc(t.assignedAdmin.surname)}</span>` : ''}
+            ${t.completedAt ? `<span>Tamamlanma: ${formatDate(t.completedAt)}</span>` : ''}
+          </div>
+          ${t.description ? `<div class="ticket-desc">${esc(t.description)}</div>` : ''}
+          ${t.solution ? `<div class="ticket-desc" style="border-left-color:var(--red);"><strong>Çözüm:</strong> ${esc(t.solution)}</div>` : ''}
+        </div>
+      `;
+    }
+
+    async function load() {
+      try {
+        const { tickets } = await apiFetch('/tickets/my');
+        const list = document.getElementById('list');
+        if (!tickets.length) {
+          list.innerHTML = `<div class="empty">${icons.empty}<p>Henüz talep oluşturmadınız.</p></div>`;
+          return;
+        }
+        list.innerHTML = tickets.map(renderTicket).join('');
+      } catch (e) {
+        toast(e.message, 'error');
+      }
+    }
+    load();
+  </script>
+</body>
+</html>

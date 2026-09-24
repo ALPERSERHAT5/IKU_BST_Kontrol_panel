@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Yeni Destek Talebi — BST Kontrol Paneli</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script type="module" src="js/theme.js"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <div class="logo">BST</div>
+      <span>Kontrol Paneli</span>
+    </div>
+    <div class="navbar-links">
+      <a href="dashboard.html"><span class="label">Ana Sayfa</span></a>
+      <a href="taleplerim.html"><span class="label">Taleplerim</span></a>
+      <a href="#" id="themeBtn"><span class="label">Tema</span></a>
+      <a href="#" id="logoutBtn"><span class="label">Çıkış</span></a>
+    </div>
+  </nav>
+
+  <div class="container-narrow">
+    <div class="page-header">
+      <h1>Yeni Destek Talebi</h1>
+      <p>Sınıfınızı seçin, sorunu belirtin, talebinizi gönderin.</p>
+    </div>
+
+    <div id="alertBox"></div>
+
+    <form id="ticketForm" class="card">
+      <div class="form-group">
+        <label>Sınıf <span class="req">*</span></label>
+        <div class="row" style="gap:8px; flex-wrap:wrap;">
+          <select id="roomSelect" style="flex:1; min-width:180px;">
+            <option value="">Sınıf seçin...</option>
+          </select>
+          <button type="button" class="btn" id="scanBtn">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM21 14v3M14 21h7"/></svg>
+            QR ile Tara
+          </button>
+        </div>
+        <div class="form-hint">Sınıf kapısındaki QR kodu okutarak otomatik seçebilirsiniz.</div>
+      </div>
+
+      <div id="scannerBox" class="hidden" style="margin-bottom:16px;">
+        <div id="qrReader" style="border-radius:4px; overflow:hidden;"></div>
+      </div>
+
+      <div class="form-group">
+        <label>Sorun Türü <span class="req">*</span></label>
+        <select id="problemSelect" required>
+          <option value="">Sorun türü seçin...</option>
+        </select>
+      </div>
+
+      <div class="form-group hidden" id="customProblemGroup">
+        <label>Özel Sorun Açıklaması <span class="req">*</span></label>
+        <input type="text" id="customProblem" placeholder="Sorunu kısaca yazın" />
+      </div>
+
+      <div class="form-group">
+        <label>Açıklama (isteğe bağlı)</label>
+        <textarea id="description" placeholder="Örn: Projeksiyon açılıyor ama görüntü gelmiyor."></textarea>
+      </div>
+
+      <div class="row" style="justify-content:flex-end;">
+        <a href="dashboard.html" class="btn">İptal</a>
+        <button type="submit" class="btn btn-primary" id="submitBtn">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+          Talebi Gönder
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <script type="module">
+    import { apiFetch, getUser, clearTokens } from './js/api.js';
+    import { toast } from './js/ui.js';
+
+    const user = getUser();
+    if (!user) {
+      window.location.href = 'login.html';
+    } else if (user.role !== 'user') {
+      window.location.href = 'admin.html';
+    }
+
+    document.getElementById('themeBtn').addEventListener('click', (e) => {
+      e.preventDefault(); window.toggleTheme();
+    });
+    document.getElementById('logoutBtn').addEventListener('click', (e) => {
+      e.preventDefault(); clearTokens(); window.location.href = 'login.html';
+    });
+
+    const roomSelect = document.getElementById('roomSelect');
+    const problemSelect = document.getElementById('problemSelect');
+    const customGroup = document.getElementById('customProblemGroup');
+    const customInput = document.getElementById('customProblem');
+
+    // Odaları ve problemleri yükle
+    async function loadData() {
+      try {
+        const [r, p] = await Promise.all([
+          apiFetch('/rooms'),
+          apiFetch('/rooms/problems'),
+        ]);
+        r.rooms.forEach(room => {
+          const opt = document.createElement('option');
+          opt.value = room.id;
+          opt.textContent = room.roomCode;
+          roomSelect.appendChild(opt);
+        });
+        p.problemTypes.forEach(pt => {
+          const opt = document.createElement('option');
+          opt.value = pt.id;
+          opt.textContent = pt.name;
+          problemSelect.appendChild(opt);
+        });
+        // URL'de ?room=TOKEN varsa onu otomatik seç
+        const params = new URLSearchParams(window.location.search);
+        const token = params.get('room');
+        if (token) {
+          try {
+            const { room } = await apiFetch(`/rooms/qr-token/${token}`);
+            roomSelect.value = room.id;
+            toast(`Sınıf QR ile seçildi: ${room.roomCode}`, 'success');
+          } catch {
+            toast('QR kodu geçersiz.', 'error');
+          }
+        }
+      } catch (e) {
+        toast(e.message, 'error');
+      }
+    }
+    loadData();
+
+    problemSelect.addEventListener('change', () => {
+      const selected = problemSelect.options[problemSelect.selectedIndex];
+      if (selected.textContent === 'Diğer') {
+        customGroup.classList.remove('hidden');
+        customInput.required = true;
+      } else {
+        customGroup.classList.add('hidden');
+        customInput.required = false;
+        customInput.value = '';
+      }
+    });
+
+    // QR tarayıcı
+    let qrScanner = null;
+    document.getElementById('scanBtn').addEventListener('click', async () => {
+      const box = document.getElementById('scannerBox');
+      const reader = document.getElementById('qrReader');
+
+      if (qrScanner) {
+        try { await qrScanner.stop(); } catch {}
+        await qrScanner.clear();
+        qrScanner = null;
+        box.classList.add('hidden');
+        return;
+      }
+
+      box.classList.remove('hidden');
+      qrScanner = new Html5Qrcode('qrReader');
+
+      try {
+        await qrScanner.start(
+          { facingMode: 'environment' },
+          { fps: 10, qrbox: { width: 220, height: 220 } },
+          async (decodedText) => {
+            // decodedText = http://localhost:3000/yeni-talep.html?room=TOKEN
+            try {
+              const url = new URL(decodedText);
+              const token = url.searchParams.get('room');
+              if (!token) throw new Error('Geçersiz QR.');
+              const { room } = await apiFetch(`/rooms/qr-token/${token}`);
+              roomSelect.value = room.id;
+              toast(`Sınıf QR ile seçildi: ${room.roomCode}`, 'success');
+              await qrScanner.stop();
+              await qrScanner.clear();
+              qrScanner = null;
+              box.classList.add('hidden');
+            } catch (err) {
+              toast('QR kodu okunamadı.', 'error');
+            }
+          },
+          () => {}
+        );
+      } catch (err) {
+        toast('Kamera erişimi verilemedi.', 'error');
+        box.classList.add('hidden');
+        qrScanner = null;
+      }
+    });
+
+    // Form gönderimi
+    document.getElementById('ticketForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const alertBox = document.getElementById('alertBox');
+      alertBox.innerHTML = '';
+
+      const roomId = roomSelect.value;
+      const problemTypeId = problemSelect.value;
+      const selectedText = problemSelect.options[problemSelect.selectedIndex]?.textContent;
+      const isCustom = selectedText === 'Diğer';
+
+      if (!roomId) return toast('Lütfen sınıf seçin.', 'error');
+      if (!problemTypeId) return toast('Lütfen sorun türü seçin.', 'error');
+      if (isCustom && !customInput.value.trim()) {
+        return toast('Lütfen özel sorun açıklaması girin.', 'error');
+      }
+
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+
+      try {
+        const { ticket } = await apiFetch('/tickets', {
+          method: 'POST',
+          body: JSON.stringify({
+            roomId,
+            problemTypeId: isCustom ? null : problemTypeId,
+            customProblem: isCustom ? customInput.value.trim() : null,
+            description: document.getElementById('description').value.trim() || null,
+          }),
+        });
+        alertBox.innerHTML = `<div class="alert alert-success">Talebiniz oluşturuldu: <strong>${ticket.ticketNumber}</strong></div>`;
+        toast('Talep gönderildi.', 'success');
+        setTimeout(() => window.location.href = 'taleplerim.html', 1200);
+      } catch (err) {
+        toast(err.message, 'error');
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
