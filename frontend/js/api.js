@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:4000/api';
+const API_BASE = 'https://bst-backend.onrender.com/api';
 
 export function getAccessToken() {
   return localStorage.getItem('accessToken');
