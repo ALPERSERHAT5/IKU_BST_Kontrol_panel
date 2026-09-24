@@ -8,11 +8,7 @@
   <script type="module" src="js/theme.js"></script>
 </head>
 <body>
- <nav class="navbar">
-  <div class="navbar-brand">
-    <div class="logo">BST</div>
-    <span>Kontrol Paneli</span>
-<nav class="navbar">
+  <nav class="navbar">
     <div class="navbar-brand">
       <div class="logo">BST</div>
       <span>Kontrol Paneli</span>
@@ -85,23 +81,27 @@
     }
 
     document.getElementById('themeBtn').addEventListener('click', (e) => {
-      e.preventDefault(); window.toggleTheme();
+      e.preventDefault();
+      window.toggleTheme();
     });
     document.getElementById('logoutBtn').addEventListener('click', (e) => {
-      e.preventDefault(); clearTokens(); window.location.href = 'login.html';
+      e.preventDefault();
+      clearTokens();
+      window.location.href = 'login.html';
     });
-// Hamburger menü
-const menuToggle = document.getElementById('menuToggle');
-const navbarLinks = document.getElementById('navbarLinks');
-if (menuToggle && navbarLinks) {
-  menuToggle.addEventListener('click', () => {
-    navbarLinks.classList.toggle('open');
-  });
-  // Menü linkine tıklayınca menüyü kapat
-  navbarLinks.querySelectorAll('a').forEach(a => {
-    a.addEventListener('click', () => navbarLinks.classList.remove('open'));
-  });
-}
+
+    // Hamburger menü
+    const menuToggle = document.getElementById('menuToggle');
+    const navbarLinks = document.getElementById('navbarLinks');
+    if (menuToggle && navbarLinks) {
+      menuToggle.addEventListener('click', () => {
+        navbarLinks.classList.toggle('open');
+      });
+      navbarLinks.querySelectorAll('a').forEach(a => {
+        a.addEventListener('click', () => navbarLinks.classList.remove('open'));
+      });
+    }
+
     function renderTicket(t) {
       return `
         <div class="ticket ${t.status}">
