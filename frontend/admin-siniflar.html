@@ -13,7 +13,12 @@
       <div class="logo">BST</div>
       <span>Kontrol Paneli</span>
     </div>
-    <div class="navbar-links">
+    <button class="menu-toggle" id="menuToggle" aria-label="Menü">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path d="M3 6h18M3 12h18M3 18h18"/>
+      </svg>
+    </button>
+    <div class="navbar-links" id="navbarLinks">
       <a href="admin.html"><span class="label">Dashboard</span></a>
       <a href="admin-talepler.html"><span class="label">Talepler</span></a>
       <a href="admin-siniflar.html" class="active"><span class="label">Sınıflar</span></a>
@@ -48,7 +53,9 @@
             <th class="text-right">İşlem</th>
           </tr>
         </thead>
-        <tbody id="roomTable"><tr><td colspan="5"><p class="muted">Yükleniyor...</p></td></tr></tbody>
+        <tbody id="roomTable">
+          <tr><td colspan="5"><p class="muted">Yükleniyor...</p></td></tr>
+        </tbody>
       </table>
     </div>
   </div>
@@ -66,11 +73,26 @@
     }
 
     document.getElementById('themeBtn').addEventListener('click', (e) => {
-      e.preventDefault(); window.toggleTheme();
+      e.preventDefault();
+      window.toggleTheme();
     });
     document.getElementById('logoutBtn').addEventListener('click', (e) => {
-      e.preventDefault(); clearTokens(); window.location.href = 'login.html';
+      e.preventDefault();
+      clearTokens();
+      window.location.href = 'login.html';
     });
+
+    // Hamburger menü
+    const menuToggle = document.getElementById('menuToggle');
+    const navbarLinks = document.getElementById('navbarLinks');
+    if (menuToggle && navbarLinks) {
+      menuToggle.addEventListener('click', () => {
+        navbarLinks.classList.toggle('open');
+      });
+      navbarLinks.querySelectorAll('a').forEach(a => {
+        a.addEventListener('click', () => navbarLinks.classList.remove('open'));
+      });
+    }
 
     async function load() {
       try {
@@ -82,11 +104,11 @@
         }
         tbody.innerHTML = rooms.map(r => `
           <tr>
-            <td><strong>${esc(r.roomCode)}</strong></td>
-            <td>${r.floor}</td>
-            <td>${esc(r.corridor)}</td>
-            <td>${esc(r.roomNumber)}</td>
-            <td class="text-right">
+            <td data-label="Sınıf Kodu"><strong>${esc(r.roomCode)}</strong></td>
+            <td data-label="Kat">${r.floor}</td>
+            <td data-label="Koridor">${esc(r.corridor)}</td>
+            <td data-label="Oda">${esc(r.roomNumber)}</td>
+            <td class="text-right" data-label="İşlem">
               <button class="btn btn-sm" data-qr="${r.id}">${icons.qr} QR</button>
               ${user.role === 'superadmin' ? `<button class="btn btn-sm" data-del="${r.id}">Sil</button>` : ''}
             </td>

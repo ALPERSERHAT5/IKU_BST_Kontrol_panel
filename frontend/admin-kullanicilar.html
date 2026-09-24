@@ -9,8 +9,16 @@
 </head>
 <body>
   <nav class="navbar">
-    <div class="navbar-brand"><div class="logo">BST</div><span>Kontrol Paneli</span></div>
-    <div class="navbar-links">
+    <div class="navbar-brand">
+      <div class="logo">BST</div>
+      <span>Kontrol Paneli</span>
+    </div>
+    <button class="menu-toggle" id="menuToggle" aria-label="Menü">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path d="M3 6h18M3 12h18M3 18h18"/>
+      </svg>
+    </button>
+    <div class="navbar-links" id="navbarLinks">
       <a href="admin.html"><span class="label">Dashboard</span></a>
       <a href="admin-talepler.html"><span class="label">Talepler</span></a>
       <a href="admin-siniflar.html"><span class="label">Sınıflar</span></a>
@@ -39,7 +47,9 @@
             <th class="text-right">İşlem</th>
           </tr>
         </thead>
-        <tbody id="userTable"><tr><td colspan="5"><p class="muted">Yükleniyor...</p></td></tr></tbody>
+        <tbody id="userTable">
+          <tr><td colspan="5"><p class="muted">Yükleniyor...</p></td></tr>
+        </tbody>
       </table>
     </div>
   </div>
@@ -53,8 +63,27 @@
       window.location.href = user ? 'admin.html' : 'login.html';
     }
 
-    document.getElementById('themeBtn').addEventListener('click', (e) => { e.preventDefault(); window.toggleTheme(); });
-    document.getElementById('logoutBtn').addEventListener('click', (e) => { e.preventDefault(); clearTokens(); window.location.href = 'login.html'; });
+    document.getElementById('themeBtn').addEventListener('click', (e) => {
+      e.preventDefault();
+      window.toggleTheme();
+    });
+    document.getElementById('logoutBtn').addEventListener('click', (e) => {
+      e.preventDefault();
+      clearTokens();
+      window.location.href = 'login.html';
+    });
+
+    // Hamburger menü
+    const menuToggle = document.getElementById('menuToggle');
+    const navbarLinks = document.getElementById('navbarLinks');
+    if (menuToggle && navbarLinks) {
+      menuToggle.addEventListener('click', () => {
+        navbarLinks.classList.toggle('open');
+      });
+      navbarLinks.querySelectorAll('a').forEach(a => {
+        a.addEventListener('click', () => navbarLinks.classList.remove('open'));
+      });
+    }
 
     async function load() {
       try {
@@ -66,11 +95,11 @@
         }
         tbody.innerHTML = users.map(u => `
           <tr>
-            <td><strong>${esc(u.name)} ${esc(u.surname)}</strong></td>
-            <td>${esc(u.email)}</td>
-            <td>${formatDate(u.createdAt)}</td>
-            <td>${u.lastLogin ? formatDate(u.lastLogin) : '-'}</td>
-            <td class="text-right">
+            <td data-label="Ad Soyad"><strong>${esc(u.name)} ${esc(u.surname)}</strong></td>
+            <td data-label="E-posta">${esc(u.email)}</td>
+            <td data-label="Kayıt">${formatDate(u.createdAt)}</td>
+            <td data-label="Son Giriş">${u.lastLogin ? formatDate(u.lastLogin) : '-'}</td>
+            <td class="text-right" data-label="İşlem">
               <button class="btn btn-sm" data-reset="${u.id}" data-name="${esc(u.name)} ${esc(u.surname)}">Şifre Sıfırla</button>
             </td>
           </tr>
@@ -78,7 +107,9 @@
         tbody.querySelectorAll('[data-reset]').forEach(btn => {
           btn.addEventListener('click', () => resetPassword(btn.dataset.reset, btn.dataset.name));
         });
-      } catch (e) { toast(e.message, 'error'); }
+      } catch (e) {
+        toast(e.message, 'error');
+      }
     }
 
     function resetPassword(id, name) {
@@ -106,7 +137,9 @@
           });
           toast('Şifre sıfırlandı.', 'success');
           modal.close();
-        } catch (err) { toast(err.message, 'error'); }
+        } catch (err) {
+          toast(err.message, 'error');
+        }
       });
     }
 

@@ -521,30 +521,189 @@ tr:hover td { background: var(--hover); }
 .hidden { display: none !important; }
 
 /* ---------- RESPONSIVE ---------- */
-@media (max-width: 720px) {
-  .navbar { padding: 0 14px; height: 52px; }
-  .navbar-brand { font-size: 14px; }
-  .navbar-brand .logo { width: 24px; height: 24px; font-size: 11px; }
-  .navbar-links a span.label { display: none; }
-  .navbar-links a { padding: 8px 10px; }
+/* ---------- MOBILE MENU (HAMBURGER) ---------- */
+.menu-toggle {
+  display: none;
+  background: none;
+  border: none;
+  padding: 8px;
+  cursor: pointer;
+  color: var(--text);
+  border-radius: var(--radius);
+}
+.menu-toggle:hover { background: var(--hover); }
 
-  .container, .container-narrow { padding: 18px 14px; }
-  h1 { font-size: 19px; }
-  .stat-value { font-size: 20px; }
-  .stats { grid-template-columns: repeat(2, 1fr); }
+/* ---------- RESPONSIVE ---------- */
+@media (max-width: 820px) {
+  .navbar {
+    padding: 0 14px;
+    height: 56px;
+    position: sticky;
+    top: 0;
+  }
+  .navbar-brand {
+    font-size: 14px;
+    gap: 8px;
+  }
+  .navbar-brand .logo {
+    width: 26px;
+    height: 26px;
+    font-size: 11px;
+  }
 
-  .ticket { padding: 14px; }
-  .ticket-actions { flex-direction: column; }
-  .ticket-actions .btn { width: 100%; }
+  /* Hamburger görünür */
+  .menu-toggle { display: flex; align-items: center; justify-content: center; }
 
-  table { font-size: 13px; }
-  th, td { padding: 10px 12px; }
-  th { font-size: 11px; }
+  /* Menü linkleri kapalı, tıklanınca açılır */
+  .navbar-links {
+    position: fixed;
+    top: 56px;
+    left: 0;
+    right: 0;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    padding: 6px;
+    max-height: calc(100vh - 56px);
+    overflow-y: auto;
+    transform: translateY(-120%);
+    transition: transform 0.18s ease;
+    z-index: 9;
+  }
+  .navbar-links.open {
+    transform: translateY(0);
+  }
+  .navbar-links a {
+    padding: 14px 16px;
+    font-size: 15px;
+    border-radius: var(--radius);
+    justify-content: flex-start;
+  }
+  .navbar-links a .label { display: inline; }
 }
 
-/* Print */
-@media print {
-  .navbar, .no-print { display: none !important; }
-  body { background: #fff; }
-  .qr-box { border: 1px solid #ccc; page-break-inside: avoid; }
+@media (max-width: 720px) {
+  .container, .container-narrow {
+    padding: 16px 14px 80px;
+  }
+  h1 { font-size: 20px; }
+  h2 { font-size: 15px; }
+
+  /* İstatistikler 2 sütun */
+  .stats { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .stat { padding: 14px 16px; }
+  .stat-value { font-size: 22px; }
+
+  /* Form elemanları daha büyük */
+  input, select, textarea {
+    font-size: 16px; /* iOS zoom'unu engeller */
+    padding: 12px 14px;
+  }
+  label { font-size: 14px; }
+  .btn {
+    padding: 12px 18px;
+    font-size: 15px;
+    min-height: 44px; /* dokunma alanı */
+  }
+  .btn-sm {
+    padding: 9px 14px;
+    font-size: 14px;
+    min-height: 38px;
+  }
+
+  /* Kartlar */
+  .card { padding: 16px; }
+  .page-header { margin-bottom: 18px; }
+
+  /* Ticket kartları */
+  .ticket { padding: 14px; }
+  .ticket-head { flex-direction: column; align-items: flex-start; gap: 6px; }
+  .ticket-title { font-size: 15px; }
+  .ticket-meta { flex-direction: column; gap: 4px; font-size: 13px; }
+  .ticket-actions {
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .ticket-actions .btn { width: 100%; }
+
+  /* Filtre butonları kaydırılabilir */
+  .filters {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+    margin-left: -14px;
+    margin-right: -14px;
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+  .filters::-webkit-scrollbar { display: none; }
+  .filter-btn { flex-shrink: 0; padding: 9px 16px; font-size: 14px; }
+
+  /* Tablo → kart görünümü */
+  .table-wrap { border: none; background: transparent; }
+  table, thead, tbody, th, td, tr { display: block; }
+  thead { display: none; }
+  tbody tr {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    margin-bottom: 10px;
+  }
+  tbody td {
+    padding: 6px 0;
+    border: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+  }
+  tbody td::before {
+    content: attr(data-label);
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  tbody td:last-child { padding-bottom: 0; }
+  tbody td .btn { width: 100%; }
+
+  /* Arama çubuğu */
+  .search-bar input { font-size: 16px; padding: 12px 0; }
+
+  /* Modal tam ekran */
+  .modal-backdrop { padding: 0; align-items: flex-end; }
+  .modal {
+    max-width: 100%;
+    max-height: 92vh;
+    border-radius: 8px 8px 0 0;
+  }
+  .modal-head { padding: 14px 16px; }
+  .modal-body { padding: 16px; }
+  .modal-foot {
+    padding: 12px 16px;
+    flex-direction: column-reverse;
+  }
+  .modal-foot .btn { width: 100%; }
+
+  /* Auth kartları */
+  .auth-wrap { padding: 16px; }
+  .auth-card { max-width: 100%; }
+
+  /* QR kutusu */
+  .qr-box { padding: 18px; }
+  .qr-box img { max-width: 200px; }
+
+  /* Row (yan yana) → alt alta */
+  .row-between {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .row-between > .btn { width: 100%; }
 }

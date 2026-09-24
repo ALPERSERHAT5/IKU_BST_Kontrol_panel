@@ -9,8 +9,16 @@
 </head>
 <body>
   <nav class="navbar">
-    <div class="navbar-brand"><div class="logo">BST</div><span>Kontrol Paneli</span></div>
-    <div class="navbar-links">
+    <div class="navbar-brand">
+      <div class="logo">BST</div>
+      <span>Kontrol Paneli</span>
+    </div>
+    <button class="menu-toggle" id="menuToggle" aria-label="Menü">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path d="M3 6h18M3 12h18M3 18h18"/>
+      </svg>
+    </button>
+    <div class="navbar-links" id="navbarLinks">
       <a href="admin.html"><span class="label">Dashboard</span></a>
       <a href="admin-talepler.html"><span class="label">Talepler</span></a>
       <a href="admin-siniflar.html"><span class="label">Sınıflar</span></a>
@@ -45,7 +53,9 @@
             <th class="text-right">İşlem</th>
           </tr>
         </thead>
-        <tbody id="adminTable"><tr><td colspan="5"><p class="muted">Yükleniyor...</p></td></tr></tbody>
+        <tbody id="adminTable">
+          <tr><td colspan="5"><p class="muted">Yükleniyor...</p></td></tr>
+        </tbody>
       </table>
     </div>
   </div>
@@ -59,8 +69,27 @@
       window.location.href = user ? 'admin.html' : 'login.html';
     }
 
-    document.getElementById('themeBtn').addEventListener('click', (e) => { e.preventDefault(); window.toggleTheme(); });
-    document.getElementById('logoutBtn').addEventListener('click', (e) => { e.preventDefault(); clearTokens(); window.location.href = 'login.html'; });
+    document.getElementById('themeBtn').addEventListener('click', (e) => {
+      e.preventDefault();
+      window.toggleTheme();
+    });
+    document.getElementById('logoutBtn').addEventListener('click', (e) => {
+      e.preventDefault();
+      clearTokens();
+      window.location.href = 'login.html';
+    });
+
+    // Hamburger menü
+    const menuToggle = document.getElementById('menuToggle');
+    const navbarLinks = document.getElementById('navbarLinks');
+    if (menuToggle && navbarLinks) {
+      menuToggle.addEventListener('click', () => {
+        navbarLinks.classList.toggle('open');
+      });
+      navbarLinks.querySelectorAll('a').forEach(a => {
+        a.addEventListener('click', () => navbarLinks.classList.remove('open'));
+      });
+    }
 
     const roleLabels = { admin: 'IT Admin', superadmin: 'Ana Admin' };
 
@@ -70,11 +99,11 @@
         const tbody = document.getElementById('adminTable');
         tbody.innerHTML = admins.map(a => `
           <tr>
-            <td><strong>${esc(a.name)} ${esc(a.surname)}</strong>${a.id === user.id ? ' <span class="muted">(siz)</span>' : ''}</td>
-            <td>${esc(a.email)}</td>
-            <td>${roleLabels[a.role] || a.role}</td>
-            <td>${a.lastLogin ? formatDate(a.lastLogin) : '-'}</td>
-            <td class="text-right">
+            <td data-label="Ad Soyad"><strong>${esc(a.name)} ${esc(a.surname)}</strong>${a.id === user.id ? ' <span class="muted">(siz)</span>' : ''}</td>
+            <td data-label="E-posta">${esc(a.email)}</td>
+            <td data-label="Rol">${roleLabels[a.role] || a.role}</td>
+            <td data-label="Son Giriş">${a.lastLogin ? formatDate(a.lastLogin) : '-'}</td>
+            <td class="text-right" data-label="İşlem">
               ${a.id !== user.id ? `<button class="btn btn-sm" data-del="${a.id}">Sil</button>` : ''}
             </td>
           </tr>
@@ -82,7 +111,9 @@
         tbody.querySelectorAll('[data-del]').forEach(btn => {
           btn.addEventListener('click', () => removeAdmin(btn.dataset.del));
         });
-      } catch (e) { toast(e.message, 'error'); }
+      } catch (e) {
+        toast(e.message, 'error');
+      }
     }
 
     async function removeAdmin(id) {
@@ -91,7 +122,9 @@
         await apiFetch(`/admin/admins/${id}`, { method: 'DELETE' });
         toast('Admin silindi.', 'success');
         load();
-      } catch (e) { toast(e.message, 'error'); }
+      } catch (e) {
+        toast(e.message, 'error');
+      }
     }
 
     document.getElementById('addAdminBtn').addEventListener('click', () => {
@@ -145,7 +178,9 @@
           toast('Admin oluşturuldu.', 'success');
           modal.close();
           load();
-        } catch (err) { toast(err.message, 'error'); }
+        } catch (err) {
+          toast(err.message, 'error');
+        }
       });
     });
 

@@ -8,14 +8,20 @@
   <script type="module" src="js/theme.js"></script>
 </head>
 <body>
-  <nav class="navbar">
+<nav class="navbar">
     <div class="navbar-brand">
       <div class="logo">BST</div>
       <span>Kontrol Paneli</span>
     </div>
-    <div class="navbar-links">
+    <button class="menu-toggle" id="menuToggle" aria-label="Menü">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path d="M3 6h18M3 12h18M3 18h18"/>
+      </svg>
+    </button>
+    <div class="navbar-links" id="navbarLinks">
       <a href="dashboard.html"><span class="label">Ana Sayfa</span></a>
       <a href="taleplerim.html" class="active"><span class="label">Taleplerim</span></a>
+      <a href="yeni-talep.html"><span class="label">Yeni Talep</span></a>
       <a href="#" id="themeBtn"><span class="label">Tema</span></a>
       <a href="#" id="logoutBtn"><span class="label">Çıkış</span></a>
     </div>
@@ -50,6 +56,18 @@
     document.getElementById('logoutBtn').addEventListener('click', (e) => {
       e.preventDefault(); clearTokens(); window.location.href = 'login.html';
     });
+    // Hamburger menü
+const menuToggle = document.getElementById('menuToggle');
+const navbarLinks = document.getElementById('navbarLinks');
+if (menuToggle && navbarLinks) {
+  menuToggle.addEventListener('click', () => {
+    navbarLinks.classList.toggle('open');
+  });
+  // Menü linkine tıklayınca menüyü kapat
+  navbarLinks.querySelectorAll('a').forEach(a => {
+    a.addEventListener('click', () => navbarLinks.classList.remove('open'));
+  });
+}
 
     function renderTicket(t) {
       return `
