@@ -4,7 +4,7 @@ import { startArchiveCleanupJob } from './jobs/archiveCleanup.js';
 
 const app = createApp();
 
-app.listen(env.port, () => {
-  console.log(`BST Kontrol Paneli API çalışıyor: http://localhost:${env.port}`);
+app.listen(env.port, '0.0.0.0', () => {
+  console.log(`BST Kontrol Paneli API çalışıyor: ${env.port}`);
   startArchiveCleanupJob();
 });
